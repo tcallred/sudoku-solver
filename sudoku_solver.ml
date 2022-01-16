@@ -21,14 +21,14 @@ let make_board w h =
 let make_filled_board w h =
   let dims = (w, h) in
   let board =
-    List.fold_left
-      (fun board i ->
-        List.fold_left
-          (fun board j -> Board.add (i, j) ((i + j) mod 10) board)
-          board
-          (range (w * h)))
-      Board.empty
-      (range (w * h))
+    range (w * h)
+    |> List.fold_left
+         (fun board i ->
+           range (w * h)
+           |> List.fold_left
+                (fun board j -> Board.add (i, j) ((i + j) mod 10) board)
+                board)
+         Board.empty
   in
   { board; dims }
 
