@@ -3,8 +3,7 @@
 module Coord = struct
   type t = int * int
 
-  let compare (x1, y1) (x2, y2) =
-    if x1 > x2 || y1 > y2 then 1 else if x1 < x2 || y1 < y2 then -1 else 0
+  let compare (x1, y1) (x2, y2) = x2 - x1 + (y2 - y1)
 end
 
 module Board = Map.Make (Coord)
@@ -22,10 +21,13 @@ let make_board w h =
 let make_filled_board w h =
   let dims = (w, h) in
   let board =
-    List.fold_left2
-      (fun board i j -> Board.add (i, j) ((i + j) mod 9) board)
+    List.fold_left
+      (fun board i ->
+        List.fold_left
+          (fun board j -> Board.add (i, j) ((i + j) mod 10) board)
+          board
+          (range (w * h)))
       Board.empty
-      (range (w * h))
       (range (w * h))
   in
   { board; dims }
