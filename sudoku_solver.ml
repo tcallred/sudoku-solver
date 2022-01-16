@@ -1,48 +1,43 @@
 (* Sudoku Solver by Taylor Allred *)
 
-type sudoku =
-  { board: int option array array;
-    dims : int * int;
-  }
+module Coord = struct
+  type t = int * int
 
-let make_board w h = 
-  let dims = (w, h)
-  in let board = Array.make_matrix (w * h) (w * h) None
-  in {
-    board = board;
-    dims = dims;
-  } 
+  let compare (x1, y1) (x2, y2) =
+    if x1 > x2 || y1 > y2 then 1 else if x1 < x2 || y1 < y2 then -1 else 0
+end
 
-let make_filled_board w h = 
-  let dims = (w, h)
-  in let board = Array.make_matrix (w * h) (w * h) (Some 0)
-  in 
-  for i = 0 to (w * h) - 1 do
-    for j = 0 to (w * h) - 1 do
-      board.(i).(j) <- Some ((i + j) mod 10);
-    done;
-  done;
-  { board = board;
-    dims = dims;
-  } 
+module Board = Map.Make (Coord)
 
-let print_board {board = board; dims = (w, h);} =
+type sudoku = { board : int Board.t; dims : int * int }
+
+let rec range_ab a b = if a >= b then [] else a :: range_ab (a + 1) b
+let range = range_ab 0
+
+let make_board w h =
+  let dims = (w, h) in
+  let board = Board.empty in
+  { board; dims }
+
+let make_filled_board w h =
+  let dims = (w, h) in
+  let board =
+    List.fold_left2
+      (fun board i j -> Board.add (i, j) ((i + j) mod 9) board)
+      Board.empty
+      (range (w * h))
+      (range (w * h))
+  in
+  { board; dims }
+
+let print_board { board; dims = w, h } =
   let open Printf in
-  begin
-    Array.iteri (
-      fun i row -> 
-        begin 
-          if i mod h == 0 then print_endline "\n" else print_endline "";
-          Array.iteri (
-            fun j elt ->
-              match elt with
-              | Some elt' -> printf (if j mod w = 0 then " %d" else "%d") elt'
-              | None -> printf (if j mod w = 0 then " %s" else "%s") "#"
-          )
-            row;
-        end
-    )
-      board;
-    print_endline "\n";
-  end
-
+  range (w * h)
+  |> List.iter (fun i ->
+         if i mod h == 0 then print_endline "\n" else print_endline "";
+         range (w * h)
+         |> List.iter (fun j ->
+                match Board.find_opt (i, j) board with
+                | Some elt -> printf (if j mod w = 0 then " %d" else "%d") elt
+                | None -> printf (if j mod w = 0 then " %s" else "%s") "#"));
+  print_endline "\n"
