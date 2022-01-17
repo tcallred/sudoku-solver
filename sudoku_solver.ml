@@ -69,3 +69,29 @@ let get_cube coord { board; dims = w, h } =
   List.map (fun c -> Board.find_opt c board) (cube_coords coord w h)
   |> List.filter Option.is_some
   |> List.map (fun elt -> Option.value elt ~default:0)
+
+let gen_board w h =
+  let dims = (w, h) in
+  let board =
+    range (w * h)
+    |> List.fold_left
+         (fun board i ->
+           range (w * h)
+           |> List.fold_left
+                (fun board j ->
+                  if Random.bool () then
+                    let chosen = Random.int (w * h) + 1 in
+                    let row = get_row i { board; dims } in
+                    let col = get_col j { board; dims } in
+                    let cube = get_cube (i, j) { board; dims } in
+                    if
+                      (not (List.mem chosen row))
+                      && (not (List.mem chosen col))
+                      && not (List.mem chosen cube)
+                    then Board.add (i, j) chosen board
+                    else board
+                  else board)
+                board)
+         Board.empty
+  in
+  { board; dims }
