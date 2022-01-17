@@ -12,6 +12,13 @@ type sudoku = { board : int Board.t; dims : int * int }
 let rec range_ab a b = if a >= b then [] else a :: range_ab (a + 1) b
 let range = range_ab 0
 
+let list_comp l1 l2 =
+  let ( let* ) x f = List.map f x |> List.concat in
+  let ( let+ ) x f = List.map f x in
+  let* x = l1 in
+  let+ y = l2 in
+  (x, y)
+
 let make_empty_board w h =
   let dims = (w, h) in
   let board = Board.empty in
@@ -25,7 +32,7 @@ let make_filled_board w h =
          (fun board i ->
            range (w * h)
            |> List.fold_left
-                (fun board j -> Board.add (i, j) (((i + j) mod 10) + 1) board)
+                (fun board j -> Board.add (i, j) (((i + j) mod 9) + 1) board)
                 board)
          Board.empty
   in
@@ -43,12 +50,22 @@ let print_board { board; dims = w, h } =
                 | None -> printf (if j mod w = 0 then " %s" else "%s") "#"));
   print_endline "\n"
 
-let get_row row_i { board; dims = w, h } =
-  List.map (fun col -> Board.find_opt (row_i, col) board) (range (w * h))
+let get_row row { board; dims = w, h } =
+  List.map (fun col -> Board.find_opt (row, col) board) (range (w * h))
   |> List.filter Option.is_some
   |> List.map (fun elt -> Option.value elt ~default:0)
 
-let get_col col_i { board; dims = w, h } =
-  List.map (fun row -> Board.find_opt (row, col_i) board) (range (w * h))
+let get_col col { board; dims = w, h } =
+  List.map (fun row -> Board.find_opt (row, col) board) (range (w * h))
+  |> List.filter Option.is_some
+  |> List.map (fun elt -> Option.value elt ~default:0)
+
+let cube_coords (row, col) w h =
+  let cube_start = (row - (row mod h), col - (col mod w)) in
+  let srow, scol = cube_start in
+  list_comp (range_ab srow (srow + h)) (range_ab scol (scol + w))
+
+let get_cube coord { board; dims = w, h } =
+  List.map (fun c -> Board.find_opt c board) (cube_coords coord w h)
   |> List.filter Option.is_some
   |> List.map (fun elt -> Option.value elt ~default:0)
