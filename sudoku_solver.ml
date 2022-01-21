@@ -111,16 +111,17 @@ let delayed_fun f x timeout =
   ignore (Unix.alarm timeout);
   try
     let r = f x in
-    ignore (Unix.alarm 0); r
-  with
-  | e  -> ignore (Unix.alarm 0); raise e
+    ignore (Unix.alarm 0);
+    r
+  with e ->
+    ignore (Unix.alarm 0);
+    raise e
 
-let solvable (s:sudoku) = 
+let solvable (s : sudoku) =
   try
     let _ = delayed_fun solve_board s 500 in
     true
-  with
-  | _ -> false
+  with _ -> false
 
 let gen_board w h =
   let dims = (w, h) in
