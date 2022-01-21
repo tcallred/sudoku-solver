@@ -74,26 +74,6 @@ let valid_num_placement n (i, j) { board; dims } =
   let cube = get_cube (i, j) { board; dims } in
   (not (List.mem n row)) && (not (List.mem n col)) && not (List.mem n cube)
 
-let gen_board w h =
-  let dims = (w, h) in
-  let board =
-    range (w * h)
-    |> List.fold_left
-         (fun board i ->
-           range (w * h)
-           |> List.fold_left
-                (fun board j ->
-                  let chosen = Random.int (w * h) + 1 in
-                  if
-                    Random.bool () && Random.bool ()
-                    && valid_num_placement chosen (i, j) { board; dims }
-                  then Board.add (i, j) chosen board
-                  else board)
-                board)
-         Board.empty
-  in
-  { board; dims }
-
 let board_is_solved { board; dims = w, h } =
   List.length (Board.bindings board) = w * h * (w * h)
 
@@ -121,3 +101,44 @@ let rec solve coord { board; dims } =
       { board; dims } (n_choices w h)
 
 let solve_board { board; dims } = solve (0, 0) { board; dims }
+
+exception Timeout
+
+let delayed_fun f x timeout =
+  let _ =
+    Sys.set_signal Sys.sigalrm (Sys.Signal_handle (fun _ -> raise Timeout))
+  in
+  ignore (Unix.alarm timeout);
+  try
+    let r = f x in
+    ignore (Unix.alarm 0); r
+  with
+  | e  -> ignore (Unix.alarm 0); raise e
+
+let solvable (s:sudoku) = 
+  try
+    let _ = delayed_fun solve_board s 500 in
+    true
+  with
+  | _ -> false
+
+let gen_board w h =
+  let dims = (w, h) in
+  let board =
+    range (w * h)
+    |> List.fold_left
+         (fun board i ->
+           range (w * h)
+           |> List.fold_left
+                (fun board j ->
+                  let chosen = Random.int (w * h) + 1 in
+                  if
+                    Random.bool () && Random.bool ()
+                    && valid_num_placement chosen (i, j) { board; dims }
+                    && solvable { board = Board.add (i, j) chosen board; dims }
+                  then Board.add (i, j) chosen board
+                  else board)
+                board)
+         Board.empty
+  in
+  { board; dims }
