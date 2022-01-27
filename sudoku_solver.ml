@@ -29,12 +29,12 @@ let make_filled_board w h =
   let board =
     range (w * h)
     |> List.fold_left
-         (fun board i ->
-           range (w * h)
-           |> List.fold_left
-                (fun board j -> Board.add (i, j) (((i + j) mod 9) + 1) board)
-                board)
-         Board.empty
+      (fun board i ->
+         range (w * h)
+         |> List.fold_left
+           (fun board j -> Board.add (i, j) (((i + j) mod 9) + 1) board)
+           board)
+      Board.empty
   in
   { board; dims }
 
@@ -42,21 +42,19 @@ let print_board { board; dims = w, h } =
   let open Printf in
   range (w * h)
   |> List.iter (fun i ->
-         if i mod h == 0 then print_endline "\n" else print_endline "";
-         range (w * h)
-         |> List.iter (fun j ->
-                match Board.find_opt (i, j) board with
-                | Some elt -> printf (if j mod w = 0 then " %d" else "%d") elt
-                | None -> printf (if j mod w = 0 then " %s" else "%s") "#"));
+      if i mod h == 0 then print_endline "\n" else print_endline "";
+      range (w * h)
+      |> List.iter (fun j ->
+          match Board.find_opt (i, j) board with
+          | Some elt -> printf (if j mod w = 0 then " %d" else "%d") elt
+          | None -> printf (if j mod w = 0 then " %s" else "%s") "#"));
   print_endline "\n"
 
 let get_row row { board; dims = w, h } =
-  List.map (fun col -> Board.find_opt (row, col) board) (range (w * h))
-  |> List.filter_map Fun.id
+  List.filter_map (fun col -> Board.find_opt (row, col) board) (range (w * h))
 
 let get_col col { board; dims = w, h } =
-  List.map (fun row -> Board.find_opt (row, col) board) (range (w * h))
-  |> List.filter_map Fun.id
+  List.filter_map (fun row -> Board.find_opt (row, col) board) (range (w * h))
 
 let cube_coords (row, col) w h =
   let start_row, start_col = (row - (row mod h), col - (col mod w)) in
@@ -65,8 +63,7 @@ let cube_coords (row, col) w h =
     (range_ab start_col (start_col + w))
 
 let get_cube coord { board; dims = w, h } =
-  List.map (fun c -> Board.find_opt c board) (cube_coords coord w h)
-  |> List.filter_map Fun.id
+  List.filter_map (fun c -> Board.find_opt c board) (cube_coords coord w h)
 
 let valid_num_placement n (i, j) { board; dims } =
   let row = get_row i { board; dims } in
@@ -91,13 +88,13 @@ let rec solve coord { board; dims } =
   else
     List.fold_left
       (fun { board; dims } n ->
-        if valid_num_placement n coord { board; dims } then
-          let next =
-            solve (next_coord coord dims)
-              { board = Board.add coord n board; dims }
-          in
-          if board_is_solved next then next else { board; dims }
-        else { board; dims })
+         if valid_num_placement n coord { board; dims } then
+           let next =
+             solve (next_coord coord dims)
+               { board = Board.add coord n board; dims }
+           in
+           if board_is_solved next then next else { board; dims }
+         else { board; dims })
       { board; dims } (n_choices w h)
 
 let solve_board { board; dims } = solve (0, 0) { board; dims }
@@ -122,24 +119,26 @@ let solvable (s : sudoku) =
     let _ = delayed_fun solve_board s 500 in
     true
   with _ -> false
+(* let _ = solve_board s in
+   true *)
 
 let gen_board w h =
   let dims = (w, h) in
   let board =
     range (w * h)
     |> List.fold_left
-         (fun board i ->
-           range (w * h)
-           |> List.fold_left
-                (fun board j ->
-                  let chosen = Random.int (w * h) + 1 in
-                  if
-                    Random.bool () && Random.bool ()
-                    && valid_num_placement chosen (i, j) { board; dims }
-                    && solvable { board = Board.add (i, j) chosen board; dims }
-                  then Board.add (i, j) chosen board
-                  else board)
-                board)
-         Board.empty
+      (fun board i ->
+         range (w * h)
+         |> List.fold_left
+           (fun board j ->
+              let chosen = Random.int (w * h) + 1 in
+              if
+                Random.bool () && Random.bool ()
+                && valid_num_placement chosen (i, j) { board; dims }
+                && solvable { board = Board.add (i, j) chosen board; dims }
+              then Board.add (i, j) chosen board
+              else board)
+           board)
+      Board.empty
   in
   { board; dims }
