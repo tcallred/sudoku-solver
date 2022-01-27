@@ -79,25 +79,27 @@ let next_coord (row, col) (w, h) =
 
 let n_choices w h = range_ab 1 ((w * h) + 1)
 
-let rec solve coord { board; dims } =
+let rec solve coord sudoku_board =
+  let {board; dims} = sudoku_board in
   let w, h = dims in
   let row, _ = coord in
-  if board_is_solved { board; dims } || row >= w * h then { board; dims }
+  if board_is_solved sudoku_board || row >= w * h then sudoku_board
   else if Board.mem coord board then
-    solve (next_coord coord dims) { board; dims }
+    solve (next_coord coord dims) sudoku_board
   else
-    List.fold_left
-      (fun { board; dims } n ->
-         if valid_num_placement n coord { board; dims } then
-           let next =
+    n_choices w h
+    |> List.fold_left
+      (fun input_board n ->
+         if valid_num_placement n coord input_board then
+           let next_board =
              solve (next_coord coord dims)
-               { board = Board.add coord n board; dims }
+               { input_board with board = Board.add coord n board}
            in
-           if board_is_solved next then next else { board; dims }
-         else { board; dims })
-      { board; dims } (n_choices w h)
+           if board_is_solved next_board then next_board else input_board
+         else input_board)
+      sudoku_board 
 
-let solve_board { board; dims } = solve (0, 0) { board; dims }
+let solve_board sudoku_board = solve (0, 0) sudoku_board
 
 exception Timeout
 
